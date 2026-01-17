@@ -1,7 +1,7 @@
 /* --- PERSONNALISATION DU CURSEUR (PIKACHU) --- */
 body, html {
   /* On remonte d'un dossier avec ../ pour trouver l'image */
-  cursor: url('../ezgif-8c5b918ef687ba31.png') 0 0, auto;
+  cursor: url('/ezgif-8c5b918ef687ba31.png') 0 0, auto;
 }
 
 /* On force l'affichage sur tous les éléments cliquables du site */
@@ -11,7 +11,7 @@ input,
 .pokemon-card-vignette, 
 .btn-favorites,
 [onClick] {
-  cursor: url('../ezgif-8c5b918ef687ba31.png') 0 0, pointer !important;
+  cursor: url('/ezgif-8c5b918ef687ba31.png') 0 0, pointer !important;
 }
 
 #root {
