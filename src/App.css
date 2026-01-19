@@ -1,58 +1,159 @@
-/* --- PERSONNALISATION DU CURSEUR (PIKACHU) --- */
-body, html {
-  /* On remonte d'un dossier avec ../ pour trouver l'image */
-  cursor: url('/ezgif-8c5b918ef687ba31.png') 0 0, auto;
-}
+ /* --- LE CURSEUR (Indispensable) --- */
 
-/* On force l'affichage sur tous les éléments cliquables du site */
-button, 
-a, 
-input,
-.pokemon-card-vignette, 
-.btn-favorites,
-[onClick] {
+* {
+
   cursor: url('/ezgif-8c5b918ef687ba31.png') 0 0, pointer !important;
+
+} 
+
+/* --- CONTROLES CENTRÉS --- */
+
+/* Conteneur principal des contrôles */
+.filters-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin: 0 auto 40px auto;
+  width: 100%;
+  max-width: 800px;
 }
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* Ligne de recherche */
+.search-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Bouton icône (balais) */
+.btn-icon {
+  background-color: #333;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 38px;
+}
+
+.btn-icon:hover {
+  background-color: #444;
+  border-color: var(--accent-yellow);
+}
+
+/* Champ de recherche */
+.search-input {
+  background-color: #333;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  font-weight: normal;
+  width: 100%;
+  max-width: 400px;
   text-align: center;
+  transition: all 0.2s ease;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-yellow);
+  background-color: #444;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Ligne des options (tri et filtre) */
+.options-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Select pour filtres */
+.filter-select {
+  background-color: #333;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  font-weight: bold;
+  min-width: 180px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+  background-color: #444;
+  border-color: var(--accent-yellow);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent-yellow);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filters-container {
+    gap: 15px;
   }
-  to {
-    transform: rotate(360deg);
+  
+  .search-row {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .search-input {
+    max-width: 100%;
+  }
+  
+  .options-row {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .filter-select {
+    min-width: 250px;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@media (max-width: 480px) {
+  .filters-container {
+    gap: 12px;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  
+  .search-row {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .btn-icon {
+    width: 48px;
+    min-width: auto;
+  }
+  
+  .search-input {
+    width: 100%;
+  }
+  
+  .options-row {
+    gap: 10px;
+  }
+  
+  .filter-select {
+    min-width: 100%;
+    max-width: 300px;
+  }
 }
