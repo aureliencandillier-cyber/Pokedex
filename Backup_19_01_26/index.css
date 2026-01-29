@@ -1,0 +1,157 @@
+/* --- CONFIGURATION GÉNÉRALE --- */
+:root {
+  --bg-color: #020202;
+  --card-bg: #1a1a1a;
+  --text-color: #ffffff;
+  --accent-gray: #8a8a8a; /* Ta couleur pour le bouton */
+  --error-red: #ff4d4d;
+}
+
+* {
+  box-sizing: border-box; /* Empêche les éléments de déborder */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative; /* Nécessaire pour placer le bouton favoris à droite */
+}
+
+/* --- TITRE & BOUTON FAVORIS --- */
+h1 {
+  text-align: center;
+  color: #ccc;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Ton bouton favoris à droite comme avant */
+.btn-favorites {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 100;
+}
+
+/* --- GRILLE (RÉSOLUTION DU CHEVAUCHEMENT) --- */
+.pokemon-list {
+  display: grid;
+  /* On définit des colonnes qui ne s'écrasent jamais */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  /* Le GAP est essentiel pour éviter que les cases se touchent */
+  gap: 30px; 
+  padding: 20px 0;
+  align-items: stretch;
+}
+
+/* --- CARTES POKÉMON --- */
+.pokemon-list > div {
+  background-color: var(--card-bg) !important;
+  border: 1px solid #333 !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  /* On laisse la carte s'agrandir selon le contenu sans déborder */
+  height: auto; 
+  min-height: 280px;
+}
+
+.pokemon-list > div:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+}
+
+.pokemon-list h3 {
+  margin: 15px 0;
+  text-transform: capitalize;
+  color: white;
+}
+
+/* TON BOUTON "VOIR DÉTAILS" (Gris / Écriture Blanche) */
+.pokemon-list button {
+  background-color: var(--accent-gray) !important;
+  color: #ffffff !important;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: auto; /* Pousse le bouton en bas */
+}
+
+/* --- LOADER --- */
+.loader {
+  border: 5px solid #333;
+  border-top: 5px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 50px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pikachu-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+.pikachu-gif {
+  width: 80px; /* Taille de base */
+  height: auto;
+  image-rendering: pixelated; /* Garde les pixels bien nets */
+  transform: scale(2); /* Double la taille visuelle */
+  margin-bottom: 30px;
+}
+
+.loading-text {
+  color: #ffcb05;
+  font-family: 'Arial Black', sans-serif;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0px #2a75bb; /* Ombre bleue style Pokémon */
+  margin-bottom: 20px;
+}
+
+.progress-bar-background {
+  width: 300px;
+  height: 15px;
+  background-color: #222;
+  border-radius: 10px;
+  border: 2px solid #444;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffcb05, #ffeb3b);
+  box-shadow: 0 0 10px rgba(255, 203, 5, 0.5);
+  transition: width 0.2s ease-out;
+}
