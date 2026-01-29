@@ -1,179 +1,172 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import './App.css';
 import PokemonCard from './PokemonCard';
 import PokemonDetail from './PokemonDetail';
+// Importation de la fonction de récupération de données depuis ton service
+import { fetchPokemonLite } from './pokemonApi';
+
+// Liste statique des types pour le menu déroulant
+const POKEMON_TYPES = [
+  { id: 'normal', fr: 'Normal' }, { id: 'fire', fr: 'Feu' }, { id: 'water', fr: 'Eau' },
+  { id: 'grass', fr: 'Plante' }, { id: 'electric', fr: 'Électrik' }, { id: 'ice', fr: 'Glace' },
+  { id: 'fighting', fr: 'Combat' }, { id: 'poison', fr: 'Poison' }, { id: 'ground', fr: 'Sol' },
+  { id: 'flying', fr: 'Vol' }, { id: 'psychic', fr: 'Psy' }, { id: 'bug', fr: 'Insecte' },
+  { id: 'rock', fr: 'Roche' }, { id: 'ghost', fr: 'Spectre' }, { id: 'dragon', fr: 'Dragon' },
+  { id: 'dark', fr: 'Ténèbres' }, { id: 'steel', fr: 'Acier' }, { id: 'fairy', fr: 'Fée' }
+];
 
 function App() {
-  const [pokemonList, setPokemonList] = useState([]);
-  const [selectedPokemon, setSelectedPokemon] = useState(null);
+  // --- ÉTATS (MÉMOIRE DU COMPOSANT) ---
+  const [pokemonList, setPokemonList] = useState([]); 
+  const [selectedPokemon, setSelectedPokemon] = useState(null); 
+  const [progress, setProgress] = useState(0); 
+  const [isLoading, setIsLoading] = useState(true); 
   
-  // NOUVEAU : État pour gérer la progression (0 à 100)
-  const [progress, setProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  
+  // États pour les filtres et le tri
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [sortCriteria, setSortCriteria] = useState('id'); 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
+  // --- PAGINATION VIRTUELLE ---
+  // On définit combien de Pokémon sont affichés initialement (50)
+  const [visibleCount, setVisibleCount] = useState(50);
+
+  // Initialisation des favoris
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('pokedex_favorites');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const saveFavorite = (pokemon) => {
-    const isAlreadyFavorite = favorites.some(fav => fav.name === pokemon.name);
-    let updatedFavorites;
-    if (isAlreadyFavorite) {
-      updatedFavorites = favorites.filter(fav => fav.name !== pokemon.name);
-    } else {
-      updatedFavorites = [...favorites, pokemon];
-    }
-    setFavorites(updatedFavorites);
-    localStorage.setItem('pokedex_favorites', JSON.stringify(updatedFavorites));
-  };
+  const saveFavorite = useCallback((pokemon) => {
+    setFavorites(prev => {
+      const isFav = prev.some(f => f.name === pokemon.name);
+      const updated = isFav ? prev.filter(f => f.name !== pokemon.name) : [...prev, pokemon];
+      localStorage.setItem('pokedex_favorites', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
+  // --- CHARGEMENT INITIAL ---
   useEffect(() => {
-    const fetchAndTranslate = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true);
-        setProgress(0); // Reset
-
-        // 1. ON CHARGE TOUT LE MONDE (limit=1302 est le max actuel approx, ou 2000 pour être sûr)
-        // Attention : Cela peut prendre 10-20 secondes selon la connexion !
-        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1302');
-        const data = await response.json();
-        
-        const total = data.results.length;
-        let count = 0;
-
-        // 2. ENRICHISSEMENT AVEC BARRE DE PROGRESSION
-        const enrichedList = await Promise.all(
-          data.results.map(async (poke) => {
-            const id = poke.url.split('/').filter(Boolean).pop();
-            let frName = poke.name; // Fallback anglais
-
-            try {
-              // On récupère le nom français
-              const sRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}/`);
-              if (sRes.ok) {
-                const sData = await sRes.json();
-                const found = sData.names.find(n => n.language.name === 'fr');
-                if (found) frName = found.name;
-              }
-            } catch (e) {
-              // Certaines formes spéciales n'ont pas de fiche "species", on ignore l'erreur
-            }
-
-            // MISE À JOUR DE LA PROGRESSION
-            count++;
-            // On met à jour le state tous les 10 items pour ne pas faire laguer le rendu
-            if (count % 10 === 0 || count === total) {
-              setProgress(Math.round((count / total) * 100));
-            }
-
-            return { ...poke, id, frName };
-          })
-        );
-
-        setPokemonList(enrichedList);
+        setProgress(0);
+        const enriched = await fetchPokemonLite(1008, setProgress);
+        setPokemonList(enriched);
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchAndTranslate();
+    loadData();
   }, []);
 
+  // --- LOGIQUE DE FILTRAGE ET TRI ---
   const filteredPokemons = useMemo(() => {
-    const baseList = showFavoritesOnly ? favorites : pokemonList;
-    return baseList.filter(poke => 
-      poke.frName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      poke.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, pokemonList, favorites, showFavoritesOnly]);
+    let list = showFavoritesOnly ? favorites : pokemonList;
+
+    if (searchTerm) {
+      list = list.filter(p => (p.frName || p.name).toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    if (selectedType) {
+      list = list.filter(p => p.types?.some(t => t.type.name === selectedType));
+    }
+
+    return [...list].sort((a, b) => {
+      switch (sortCriteria) {
+        case 'weight': return (b.weight || 0) - (a.weight || 0);
+        case 'height': return (b.height || 0) - (a.height || 0);
+        case 'name': return (a.frName || a.name).localeCompare(b.frName || b.name);
+        default: return a.id - b.id;
+      }
+    });
+  }, [searchTerm, selectedType, sortCriteria, showFavoritesOnly, favorites, pokemonList]);
+
+  // --- LOGIQUE DE PAGINATION ---
+  // On crée une sous-liste qui contient uniquement les éléments à afficher
+  const displayedPokemons = useMemo(() => {
+    return filteredPokemons.slice(0, visibleCount);
+  }, [filteredPokemons, visibleCount]);
+
+  // --- EFFET DE RÉINITIALISATION ---
+  // Si l'utilisateur change un filtre, on remet la pagination à 50
+  // pour éviter d'afficher 500 résultats si on change soudainement de recherche.
+  useEffect(() => {
+    setVisibleCount(50);
+  }, [searchTerm, selectedType, sortCriteria, showFavoritesOnly]);
 
   return (
     <div className="App">
-      <header style={{ position: 'relative', marginBottom: '40px' }}>
-        <h1>{showFavoritesOnly ? "Mes Pokémons Favoris" : "Pokédex National"}</h1>
+      <header>
+        <h1>{showFavoritesOnly ? "Mes Favoris" : "Pokédex National"}</h1>
         {!selectedPokemon && (
-          <button
-            className="btn-favorites"
-            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            style={{
-              position: 'absolute', top: '10px', right: '0',
-              backgroundColor: showFavoritesOnly ? '#ff4d4d' : '#333',
-              color: 'white', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer',
-              border: '1px solid #555', fontWeight: 'bold'
-            }}
-          >
-            {showFavoritesOnly ? '🏠 Voir Tout' : '❤️ Mes Favoris'}
+          <button className="btn-favorites" onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
+            {showFavoritesOnly ? '🏠 Accueil' : '❤️ Mes Favoris'}
           </button>
         )}
       </header>
 
       {selectedPokemon ? (
-        <PokemonDetail
-          pokemon={selectedPokemon}
+        <PokemonDetail 
+          pokemon={selectedPokemon} 
           onBack={() => setSelectedPokemon(null)}
-          onNavigate={(newPoke) => setSelectedPokemon(newPoke)}
           onToggleFavorite={saveFavorite}
           isFavorite={favorites.some(f => f.name === selectedPokemon.name)}
+          onNavigate={setSelectedPokemon}
         />
       ) : (
         <>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px', gap: '10px' }}>
-             <button
-              onClick={() => setSearchTerm("")}
-              title="Nettoyer la recherche"
-              style={{
-                backgroundColor: '#333', color: 'white', border: '1px solid #555',
-                borderRadius: '8px', padding: '0 15px', fontSize: '1.2rem', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
-            >
-              🧹
-            </button>
-            <input
-              className="search-input"
-              type="text"
-              placeholder="Rechercher un pokémon..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                flex: 1, maxWidth: '400px', padding: '15px', borderRadius: '8px',
-                border: '1px solid #333', backgroundColor: '#111', color: 'white', textAlign: 'center'
-              }}
-            />
+          <div className="filters-container">
+            <div className="search-row">
+              <button className="btn-icon" onClick={() => {setSearchTerm(""); setSelectedType(""); setSortCriteria("id");}}>🧹</button>
+              <input className="search-input" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            <div className="options-row">
+              <select className="filter-select" value={sortCriteria} onChange={(e) => setSortCriteria(e.target.value)}>
+                <option value="id">Numéro</option>
+                <option value="name">Nom</option>
+                <option value="weight">Poids</option>
+                <option value="height">Taille</option>
+              </select>
+              <select className="filter-select" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
+                <option value="">Tous les Types</option>
+                {POKEMON_TYPES.map(t => <option key={t.id} value={t.id}>{t.fr}</option>)}
+              </select>
+            </div>
           </div>
 
           {isLoading ? (
-            /* --- LE LOADER PIKACHU --- */
             <div className="pikachu-loader-container">
-              <img className="pikachu-gif" 
-                src="/pikachu-running.gif" 
-                alt="Pikachu running"
-              />
+              <img className="pikachu-gif" src="/Pokedex/pikachu-running.gif" alt="Pikachu running" />
               <div className="loading-text">Attrapez-les tous... {progress}%</div>
               <div className="progress-bar-background">
-                <div 
-                  className="progress-bar-fill" 
-                  style={{ width: `${progress}%` }}
-                ></div>
+                <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
               </div>
-              <p style={{color: '#666', marginTop: '10px', fontSize: '0.8rem'}}>Chargement de {progress > 0 ? Math.floor((progress/100)*1302) : 0} / 1302 Pokémons</p>
             </div>
           ) : (
-            <div className="pokemon-list">
-              {filteredPokemons.map((poke) => (
-                <PokemonCard key={poke.name} pokemon={poke} onSelect={setSelectedPokemon} />
-              ))}
-              {filteredPokemons.length === 0 && (
-                <p style={{ width: '100%', textAlign: 'center', color: '#666', marginTop: '20px' }}>
-                  Aucun Pokémon trouvé. Essayez le balais 🧹 !
-                </p>
+            <>
+              <div className="pokemon-list">
+                {/* On itère sur 'displayedPokemons' au lieu de 'filteredPokemons' */}
+                {displayedPokemons.map(p => <PokemonCard key={p.id} pokemon={p} onSelect={setSelectedPokemon} />)}
+              </div>
+
+              {/* BOUTON CHARGER PLUS */}
+              {/* Il n'apparaît que s'il reste des Pokémon à afficher dans la liste filtrée */}
+              {visibleCount < filteredPokemons.length && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                  <button 
+                    className="pokedex-control" // Utilise le style que nous avons créé précédemment
+                    onClick={() => setVisibleCount(prev => prev + 50)}
+                    style={{ padding: '12px 30px', cursor: 'pointer' }}
+                  >
+                    Charger plus de Pokémon...
+                  </button>
+                </div>
               )}
-            </div>
+            </>
           )}
         </>
       )}
